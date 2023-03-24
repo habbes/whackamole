@@ -38,6 +38,9 @@ cd .. # move to project root
 node proxy 5001 8001 localhost:3001
 ```
 
+**NOTE**: This is a proof-of-concept. In a future version, we
+should get rid of these proxies.
+
 ## Configure nginx reverse proxy and load balance
 
 This scenario assumes you have nginx server running (on port 80)
