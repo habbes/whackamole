@@ -61,3 +61,40 @@ sudo python3 agent.py
 
 This will listen to requests on port 6700
 
+## Test drive the whackamole library in an interactive python shell
+
+Make sure the agent is already running (on port 6700)
+
+Run an interactive python shell:
+
+```
+python3
+```
+
+Import and initialize the library
+
+```
+from lib import Whackamole
+
+wm = Whackamole()
+```
+
+Here's a sample interactive session that drops and resume network on a specific
+interface, then kills a process:
+
+```
+(.venv) habbes@habbes-ubuntu-vm:~/whackamole/hack2023$ python3
+Python 3.10.12 (main, Jun 11 2023, 05:26:28) [GCC 11.4.0] on linux
+Type "help", "copyright", "credits" or "license" for more information.
+>>> from lib import Whackamole
+>>> wm = Whackamole()
+>>> p = wm.process(pid=27170)
+>>> net = wm.network('ens33')
+>>> net.drop_packets()
+>>> net.resume_packets()
+>>> p.kill()
+>>> 
+```
+
+TODO: `net.drop_packets(duration=num_seconds)` blocks for the specified duration
+and should not be used until this issue is fixed (should sleep in the background)

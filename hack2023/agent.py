@@ -2,7 +2,8 @@
 from bcc import BPF, ct
 from time import sleep
 from sys import argv
-from flask import Flask, make_response, request
+from flask import Flask, request
+import subprocess
 
 program = r"""
 // BCC macro to create a hash table map
@@ -55,12 +56,18 @@ class Controller:
             self.attach_to_inteface(interface)
 
         self.xdp_map[ct.c_int(0)] = ct.c_int(1)
+        print('dropping packets for interface', interface)
     
     def resume_packets(self, interface):
         if interface not in self.attached_interfaces:
             self.attach_to_inteface(interface)
 
         self.xdp_map[ct.c_int(0)] = ct.c_int(0)
+        print('resuming packets for interface', interface)
+    
+    def kill_process(self, pid):
+        subprocess.run(['kill', '-9', str(pid)], check=True)
+        print('killing process', pid)
 
 
 controller = Controller(xdp, comm_table)
@@ -147,7 +154,34 @@ def resume_packets():
             'error': str(e)
         }
 
+        return response, 400
+
+@app.route('/kill_process', methods=['POST'])
+def kill_process():
+    try:
+        data = request.get_json()
+        print('data', data)
+        if 'pid' not in data:
+            raise Exception('pid required')
+        
+        pid = data['pid']
+        controller.kill_process(pid)
+
+        response = {
+            'ok': True
+        }
+
         return response, 200
+    except Exception as e:
+        response = {
+            'error': str(e)
+        }
+
+        return response, 400
+
+@app.route('/')
+def status():
+    return { 'ok': True }
     
 if __name__ == '__main__':
     if len(argv) > 1 and argv[1] == 'cli':
