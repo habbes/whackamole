@@ -29,3 +29,35 @@ I went with the following options for my local setup:
     - Cloned the repo in my home directory: `git clone --recurse-submodules https://github.com/libbpf/bpftool.git`
     - Then `cd bpftool/src`
     - Then `make install`
+
+## agent and whackamole setup
+
+Create virtual environment:
+
+```
+python3 -m venv .venv
+```
+
+Activate the virtual environment:
+
+```
+source .venv/bin/activate
+```
+
+Install dependencies:
+
+```
+pip install -r requirements.txt
+```
+
+## Run the agent as root
+
+Run the agent as a server. The `agent.py` needs elevated priveleges
+because it interacts with eBPF (and possibly other system resources)
+
+```
+sudo python3 agent.py
+```
+
+This will listen to requests on port 6700
+

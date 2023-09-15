@@ -1,6 +1,8 @@
 #!/usr/bin/python
 from bcc import BPF, ct
 from time import sleep
+from sys import argv
+from flask import Flask, make_response, request
 
 program = r"""
 // BCC macro to create a hash table map
@@ -85,20 +87,70 @@ class CommandHandler:
 
 handler = CommandHandler(controller)
 
-while True:
-    raw_command = input("> ")
-    parts = raw_command.split()
-    command, args = parts[0], parts[1:]
-    if command == 'exit':
-        break
+def run_cli(handler: CommandHandler):
+    while True:
+        raw_command = input("> ")
+        parts = raw_command.split()
+        command, args = parts[0], parts[1:]
+        if command == 'exit':
+            break
 
-    handler.handle_command(command, args)
-    # try:
-    #     handler.handle_command(command, args)
-    # except Exception as e:
-    #     print("Error occured:", e)
+        handler.handle_command(command, args)
+        # try:
+        #     handler.handle_command(command, args)
+        # except Exception as e:
+        #     print("Error occured:", e)
         
 
 
+app = Flask(__name__)
 
+@app.route('/drop_packets', methods=['POST'])
+def drop_packets():
+    try:
+        data = request.get_json()
+        if 'interface' not in data:
+            raise Exception('interface is required')
+        
+        interface = data['interface']
+        controller.drop_packets(interface)
 
+        response = {
+            'ok': True
+        }
+
+        return response, 200
+    except Exception as e:
+        response = {
+            'error': str(e)
+        }
+
+        return response, 400
+
+@app.route('/resume_packets', methods=['POST'])
+def resume_packets():
+    try:
+        data = request.get_json()
+        if 'interface' not in data:
+            raise Exception('interface is required')
+        
+        interface = data['interface']
+        controller.resume_packets(interface)
+
+        response = {
+            'ok': True
+        }
+
+        return response, 200
+    except Exception as e:
+        response = {
+            'error': str(e)
+        }
+
+        return response, 200
+    
+if __name__ == '__main__':
+    if len(argv) > 1 and argv[1] == 'cli':
+        run_cli(handler)
+    else:
+        app.run(debug=True, port=6700)
