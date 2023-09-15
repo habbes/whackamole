@@ -73,8 +73,8 @@ class Controller:
     def delay_network(self, interface, delay, dport):
         print('delaying network', interface, delay, dport)
         network_delay_cmd_one = f"sudo tc qdisc add dev {interface} root handle 1: prio priomap 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0"
-        network_delay_cmd_two = f"sudo tc qdisc add dev {interface} parent 1:2 handle 20: netem delay ${delay}ms"
-        network_delay_cmd_three = f"sudo tc filter add dev {interface} parent 1:0 protocol ip u32 match ip dport ${dport} 0xffff flowid 1:2"
+        network_delay_cmd_two = f"sudo tc qdisc add dev {interface} parent 1:2 handle 20: netem delay {delay}ms"
+        network_delay_cmd_three = f"sudo tc filter add dev {interface} parent 1:0 protocol ip u32 match ip dport {dport} 0xffff flowid 1:2"
         commands = [network_delay_cmd_one, network_delay_cmd_two, network_delay_cmd_three]
 
         for cmd in commands:

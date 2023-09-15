@@ -38,8 +38,7 @@ class Process():
         if self.port is None:
             raise Exception("port required to delay network")
         if interface is None:
-            nets = list(self.wm.interfaces.keys())
-            interface = nets[0] if len(nets) > 0 else None
+            interface = self.get_default_interface()
         if interface is None:
             raise Exception("Network interface should be set")
         
@@ -47,7 +46,7 @@ class Process():
 
     def remove_delay(self, interface: str = None):
         if interface is None:
-            interface = next(self.wm.interfaces.keys())
+            interface = self.get_default_interface()
         if interface is None:
             raise Exception("Network interface should be set")
         
@@ -56,6 +55,11 @@ class Process():
     def try_to_get_pid(self):
         if self.pid is None:
             self.pid = find_pid_by_port(self.port)
+    
+    def get_default_interface(self):
+        nets = list(self.wm.interfaces.keys())
+        interface = nets[0] if len(nets) > 0 else None
+        return interface
 
     
 
