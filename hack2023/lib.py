@@ -6,9 +6,12 @@ import psutil
 class Whackamole():
     def __init__(self, agent_url: str='http://localhost:6700'):
         self.agent = Agent(agent_url)
+        self.interfaces = {}
     
     def network(self, interface: str):
-        return NetInterface(self, interface)
+        net = NetInterface(self, interface)
+        self.interfaces[interface] = net
+        return net
 
     def process(self, pid=None, port=None):
         return Process(self, pid=pid, port=port)
@@ -31,6 +34,25 @@ class Process():
             raise Exception("pid required to terminate the process")
         self.wm.agent.kill_process(self.pid)
     
+    def delay_network(self, delay:int, interface: str = None):
+        if self.port is None:
+            raise Exception("port required to delay network")
+        if interface is None:
+            nets = list(self.wm.interfaces.keys())
+            interface = nets[0] if len(nets) > 0 else None
+        if interface is None:
+            raise Exception("Network interface should be set")
+        
+        self.wm.agent.delay_network(interface, delay, self.port)
+
+    def remove_delay(self, interface: str = None):
+        if interface is None:
+            interface = next(self.wm.interfaces.keys())
+        if interface is None:
+            raise Exception("Network interface should be set")
+        
+        self.wm.agent.remove_delay(interface)
+    
     def try_to_get_pid(self):
         if self.pid is None:
             self.pid = find_pid_by_port(self.port)
@@ -52,6 +74,13 @@ class NetInterface():
         self.wm.agent.resume_packets(self.name)
 
 
+    def delay_network(self, delay: int, port: int):
+        self.wm.agent.delay_network(self.name, delay, port)
+    
+    def remove_delay(self):
+        self.wm.agent.remove_delay(self.name)
+
+
 class Agent():
     def __init__(self, url: str):
         self.url = url
@@ -69,6 +98,19 @@ class Agent():
     def kill_process(self, pid):
         self.make_post('kill_process', {
             'pid': pid
+        })
+
+    
+    def delay_network(self, interface: str, delay: int, port: int):
+        self.make_post('delay_network', {
+            'interface': interface,
+            'delay': delay,
+            'port': port
+        })
+    
+    def remove_delay(self, interface: str):
+        self.make_post('remove_delay', {
+            'interface': interface
         })
     
     def make_post(self, endpoint: str, data):

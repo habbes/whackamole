@@ -69,6 +69,20 @@ class Controller:
         subprocess.run(['kill', '-9', str(pid)], check=True)
         print('killing process', pid)
 
+    
+    def delay_network(self, interface, delay, dport):
+        print('delaying network', interface, delay, dport)
+        network_delay_cmd_one = f"sudo tc qdisc add dev {interface} root handle 1: prio priomap 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0"
+        network_delay_cmd_two = f"sudo tc qdisc add dev {interface} parent 1:2 handle 20: netem delay ${delay}ms"
+        network_delay_cmd_three = f"sudo tc filter add dev {interface} parent 1:0 protocol ip u32 match ip dport ${dport} 0xffff flowid 1:2"
+        commands = [network_delay_cmd_one, network_delay_cmd_two, network_delay_cmd_three]
+
+        for cmd in commands:
+            subprocess.run(["bash", "-c", cmd], check=True, shell=False)
+    
+    def remove_nework_delay(self, interface: str):
+        undo_network_delay_cmd = f"sudo tc qdisc del dev {interface} root"
+        subprocess.run(["bash", "-c", undo_network_delay_cmd], check=True, shell=False)
 
 controller = Controller(xdp, comm_table)
 
@@ -178,6 +192,63 @@ def kill_process():
         }
 
         return response, 400
+
+@app.route('/delay_network', methods=['POST'])
+def delay_network():
+    try:
+        data = request.get_json()
+        print('data', data)
+        if 'interface' not in data:
+            raise Exception('interface required')
+        
+        if 'delay' not in data:
+            raise Exception('delay required')
+        
+        if 'port' not in data:
+            raise Exception('port required')
+        
+        controller.delay_network(
+            data['interface'],
+            data['delay'],
+            data['port']
+        )
+
+        response = {
+            'ok': True
+        }
+
+        return response, 200
+    except Exception as e:
+        response = {
+            'error': str(e)
+        }
+
+        return response, 400
+
+@app.route('/remove_delay', methods=['POST'])
+def remove_delay():
+    try:
+        data = request.get_json()
+        print('data', data)
+        if 'interface' not in data:
+            raise Exception('interface required')
+
+        controller.remove_nework_delay(
+            data['interface']
+        )
+
+        response = {
+            'ok': True
+        }
+
+        return response, 200
+    except Exception as e:
+        response = {
+            'error': str(e)
+        }
+
+        return response, 400
+
 
 @app.route('/')
 def status():
